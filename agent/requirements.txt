@@ -1,0 +1,27 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# LangChain & LangGraph
+langchain==0.3.13
+langchain-community==0.3.13
+langchain-ollama==0.2.2
+langgraph==0.2.59
+langgraph-checkpoint-redis==0.0.4
+
+# Vector DB
+chromadb==0.5.23
+
+# Database & Cache
+asyncpg==0.30.0
+sqlalchemy[asyncio]==2.0.36
+redis[asyncio]==5.2.1
+
+# HTTP
+httpx==0.28.1
+
+# Utilities
+python-multipart==0.0.17
+python-dotenv==1.0.1
+tenacity==9.0.0
