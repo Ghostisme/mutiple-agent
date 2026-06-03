@@ -22,6 +22,7 @@ docker-compose up -d
 
 ### 2. 启动 Python Agent 服务
 
+> python 3.12 version
 ```bash
 cd agent
 python -m venv .venv
