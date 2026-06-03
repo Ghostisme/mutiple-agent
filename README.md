@@ -28,7 +28,7 @@ python -m venv .venv
 .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
 cp .env.example .env
-uvicorn main:app --reload --port 8000
+.\.venv\Scripts\uvicorn.exe main:app --reload --port 8000
 ```
 
 ### 3. 启动 NestJS API
