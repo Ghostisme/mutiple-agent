@@ -87,6 +87,7 @@ class ChartData(BaseModel):
     x_field: str
     y_field: str
     data: list[dict[str, Any]]
+    total: Optional[str] = None
 
 
 class HitlPauseData(BaseModel):
