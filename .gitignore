@@ -12,6 +12,7 @@ web/.vercel/
 
 # ── NestJS / TypeScript ──────────────────────────────────────
 api/dist/
+api/logs/
 
 # ── Python ──────────────────────────────────────────────────
 agent/.venv/
