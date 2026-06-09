@@ -16,6 +16,7 @@
 """
 
 import json
+import asyncio
 from typing import AsyncIterator, TypedDict, Annotated, Optional
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
@@ -23,12 +24,14 @@ from langgraph.graph import StateGraph, START, END
 import operator
 
 from config import get_settings
+from logger import get_logger
 from schemas import ChatRequest, SSEEvent, SSEEventType, ChartData
 from services.memory_service import MemoryService
 from services.knowledge_service import KnowledgeService
 from services.hitl_store import HitlStore
 
 settings = get_settings()
+logger = get_logger(__name__)
 
 
 # ── 图状态定义 ──────────────────────────────────────────────
@@ -99,6 +102,11 @@ async def router_node(state: AgentState) -> dict:
         route = "rag"
     else:
         route = "direct"
+
+    logger.debug(
+        "router_node: session=%s  route=%s  has_knowledge=%s  has_tools=%s",
+        state["session_id"], route, has_knowledge, has_tools,
+    )
 
     route_event = SSEEvent(
         event=SSEEventType.step,
@@ -186,8 +194,11 @@ async def tool_node(state: AgentState) -> dict:
 
     tool_fn = TOOL_REGISTRY.get(tool_name)
     if tool_fn:
+        logger.info("tool_node: executing tool=%s  args=%s", tool_name, tool_args)
         result = await tool_fn(**tool_args)
+        logger.debug("tool_node: tool=%s  result=%s", tool_name, result)
     else:
+        logger.warning("tool_node: unregistered tool=%s", tool_name)
         result = f"工具 {tool_name} 未注册"
 
     return {"tool_result": str(result), "tool_name": tool_name, "sse_events": events}
@@ -328,7 +339,12 @@ class GraphService:
                     timeout=5.0,
                 )
                 agent_cfg = resp.json()
-            except Exception:
+                logger.debug("Loaded agent config for agent_id=%s", request.agent_id)
+            except Exception as exc:
+                logger.warning(
+                    "Failed to load agent config for agent_id=%s, using defaults: %s",
+                    request.agent_id, exc,
+                )
                 agent_cfg = {
                     "system_prompt": "你是一个有帮助的 AI 助手。",
                     "model": cfg.ollama_model,
@@ -355,11 +371,15 @@ class GraphService:
             "sse_events": [],
         }
 
-        async for snapshot in self.graph.astream(initial_state):
-            for node_output in snapshot.values():
-                if isinstance(node_output, dict):
-                    for event in node_output.get("sse_events", []):
-                        yield event
+        try:
+            async for snapshot in self.graph.astream(initial_state):
+                for node_output in snapshot.values():
+                    if isinstance(node_output, dict):
+                        for event in node_output.get("sse_events", []):
+                            yield event
+        except asyncio.CancelledError:
+            logger.debug("run_stream: cancelled  session=%s", request.session_id)
+            raise
 
     async def clear_session(self, session_id: str):
         await memory_service.clear_session(session_id)

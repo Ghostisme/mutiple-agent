@@ -20,8 +20,10 @@ from langchain_ollama import OllamaEmbeddings
 import chromadb
 
 from config import get_settings
+from logger import get_logger
 
 settings = get_settings()
+logger = get_logger(__name__)
 
 
 class KnowledgeService:
@@ -64,11 +66,19 @@ class KnowledgeService:
         ============================================================
         """
         # TODO: 你来实现这里
+        logger.info("ingest_document: agent_id=%s  filename=%s", agent_id, filename)
+        # collection = self._get_collection(agent_id)
+        # splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        # chunks = splitter.split_text(content)
+        # logger.debug("ingest_document: split into %d chunks", len(chunks))
+        # vectors = self.embeddings.embed_documents(chunks)
+        # collection.add(vectors)
         raise NotImplementedError("请在 knowledge_service.py 中实现 ingest_document()")
 
     async def search(
         self, agent_id: str, query: str, top_k: int = 5
     ) -> list[dict]:
+        logger.debug("search: agent_id=%s  top_k=%d  query=%.50s...", agent_id, top_k, query)
         """
         向量相似度检索
 
@@ -99,6 +109,7 @@ class KnowledgeService:
                 "metadata": meta,
                 "score": 1 - dist,  # cosine distance → similarity
             })
+        logger.debug("search: returned %d results", len(output))
         return output
 
     async def list_documents(self, agent_id: str) -> list[dict]:
@@ -127,6 +138,11 @@ class KnowledgeService:
         # 先尝试按 filename 查找所有相关块
         results = collection.get(where={"filename": doc_id})
         if results["ids"]:
+            logger.info(
+                "delete_document: agent_id=%s  filename=%s  chunks=%d",
+                agent_id, doc_id, len(results["ids"]),
+            )
             collection.delete(ids=results["ids"])
         else:
+            logger.info("delete_document: agent_id=%s  doc_id=%s", agent_id, doc_id)
             collection.delete(ids=[doc_id])

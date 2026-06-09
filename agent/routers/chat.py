@@ -16,10 +16,12 @@ from fastapi.responses import StreamingResponse
 from schemas import ChatRequest, HitlResponse, SSEEvent, SSEEventType
 from services.graph_service import GraphService
 from services.hitl_store import HitlStore
+from logger import get_logger
 
 router = APIRouter()
 graph_service = GraphService()
 hitl_store = HitlStore()
+logger = get_logger(__name__)
 
 
 def format_sse(event: SSEEvent) -> str:
@@ -40,6 +42,10 @@ async def chat_stream(request: ChatRequest):
       event: hitl\ndata: {"event":"hitl","data":{"tool_name":"delete_record",...}}\n\n
       event: done\ndata: {"event":"done","data":null}\n\n
     """
+    logger.info(
+        "chat_stream: session=%s  agent=%s  message=%.80s",
+        request.session_id, request.agent_id, request.message,
+    )
 
     async def event_generator():
         try:
@@ -48,12 +54,20 @@ async def chat_stream(request: ChatRequest):
                 # 给前端一点喘息时间，避免背压
                 await asyncio.sleep(0)
         except asyncio.CancelledError:
-            yield format_sse(SSEEvent(
-                event=SSEEventType.done,
-                data=None,
-                session_id=request.session_id,
-            ))
+            # yield format_sse(SSEEvent(
+            #     event=SSEEventType.done,
+            #     data=None,
+            #     session_id=request.session_id,
+            # ))
+            # 客户端断开或服务器关闭时收到取消信号
+            # 不在此处 yield，直接返回让取消信号正常传播
+            logger.debug("chat_stream: client disconnected  session=%s", request.session_id)
+            return
         except Exception as e:
+            logger.error(
+                "chat_stream: unhandled error  session=%s  error=%s",
+                request.session_id, e, exc_info=True,
+            )
             yield format_sse(SSEEvent(
                 event=SSEEventType.error,
                 data=str(e),
@@ -84,6 +98,10 @@ async def hitl_respond(response: HitlResponse):
     当 Agent 遇到危险操作时会暂停并发送 hitl 事件给前端，
     用户点击确认/拒绝后调用此接口，Agent 从暂停处恢复执行。
     """
+    logger.info(
+        "hitl_respond: session=%s  approved=%s  reason=%s",
+        response.session_id, response.approved, response.reason,
+    )
     await hitl_store.resolve(response.session_id, response.approved, response.reason)
     return {"status": "ok", "session_id": response.session_id}
 
@@ -91,5 +109,6 @@ async def hitl_respond(response: HitlResponse):
 @router.delete("/sessions/{session_id}")
 async def clear_session(session_id: str):
     """清除会话记忆"""
+    logger.info("clear_session: session=%s", session_id)
     await graph_service.clear_session(session_id)
     return {"status": "cleared", "session_id": session_id}

@@ -9,7 +9,7 @@
  * =============================================================
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Observable, Subject } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
@@ -21,6 +21,7 @@ export interface SseMessage {
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
   private readonly agentUrl: string;
 
   constructor(
@@ -70,6 +71,7 @@ export class ChatService {
       body: JSON.stringify({ agent_id: agentId, session_id: sessionId, message }),
     });
 
+    this.logger.warn('当前请求python fastapi', response)
     if (!response.ok) {
       throw new Error(`Agent service error: ${response.status}`);
     }
