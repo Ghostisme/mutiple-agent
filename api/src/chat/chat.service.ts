@@ -71,6 +71,8 @@ export class ChatService {
       body: JSON.stringify({ agent_id: agentId, session_id: sessionId, message }),
     });
 
+    this.logger.log('当前请求python的结果', response)
+
     this.logger.warn('当前请求python fastapi', response)
     if (!response.ok) {
       throw new Error(`Agent service error: ${response.status}`);

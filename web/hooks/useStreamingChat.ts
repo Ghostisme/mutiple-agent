@@ -253,17 +253,21 @@ export function useStreamingChat(agentId: string) {
       // 3. 创建可中断的请求
       const controller = new AbortController();
       abortControllerRef.current = controller;
-
+      
+      console.log('当前请求的后端流式处理地址', `${API_BASE}/chat/stream`)
       try {
         const response = await fetch(
-          `${API_BASE}/chat/${agentId}/stream`,
+          `${API_BASE}/chat/${agentId}/stream?session_id=${state.sessionId}&message=${content}`,
+          // `${API_BASE}/chat/stream`,
           {
-            method: 'POST',
+            // method: 'POST',
+            method: 'GET',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              session_id: state.sessionId,
-              message: content,
-            }),
+            // body: JSON.stringify({
+            //   session_id: state.sessionId,
+            //   // agent_id: agentId,
+            //   message: content,
+            // }),
             signal: controller.signal,
           },
         );

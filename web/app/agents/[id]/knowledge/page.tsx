@@ -36,11 +36,15 @@ export default function KnowledgePage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    getKnowledgeList()
+  }, [agentId]);
+
+  const getKnowledgeList = () => {
     knowledgeApi.list(agentId)
       .then(setDocuments)
       .catch(() => toast.error('加载知识库失败'))
       .finally(() => setLoading(false));
-  }, [agentId]);
+  }
 
   const handleUpload = useCallback(async (files: File[]) => {
     /**
@@ -53,7 +57,19 @@ export default function KnowledgePage({ params }: PageProps) {
      *   4. 失败后 toast.error()
      *   5. setUploading(false)
      */
-    toast.info('TODO: 实现上传逻辑（knowledge/page.tsx）');
+    // toast.info('TODO: 实现上传逻辑（knowledge/page.tsx）');
+    setUploading(true)
+    try {
+      files.map(async (item) => {
+        await knowledgeApi.upload(agentId, item)
+        toast.success('上传成功')
+        getKnowledgeList()
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '上传失败')
+    } finally {
+      setUploading(false)
+    }
   }, [agentId]);
 
   const handleDelete = async (doc: KnowledgeDocument) => {

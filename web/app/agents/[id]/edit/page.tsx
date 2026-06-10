@@ -46,12 +46,31 @@ export default function EditAgentPage({ params }: PageProps) {
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    setSaving(true)
     e.preventDefault();
     // TODO: 你来实现提交逻辑
     // 提示：从 e.currentTarget 获取表单数据
     // const formData = new FormData(e.currentTarget)
     // await agentsApi.update(id, { name: formData.get('name') as string, ... })
-    toast.info('TODO: 实现保存逻辑');
+    const formData = new FormData(e.currentTarget)
+    const params = {
+      name: formData.get('name') as string ?? undefined,
+      description: formData.get('description') as string ?? undefined,
+      model: formData.get('model') as string ?? undefined,
+      memory_type: formData.get('memory_type') as MemoryType ?? undefined,
+      tools: formData.getAll('tools') as string[] ?? undefined,
+    }
+    console.log(params, "获取参数")
+    const res = await agentsApi.update(id, params)
+    console.log(res, "结果")
+    if(res) {
+      setSaving(false)
+      toast.success('保存成功')
+      setTimeout(() => {
+        router.back()
+      }, 3000)
+    }
+    // toast.info('TODO: 实现保存逻辑');
   };
 
   if (loading) return <div className="p-6 text-muted-foreground">加载中...</div>;

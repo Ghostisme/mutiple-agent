@@ -54,15 +54,15 @@ async def chat_stream(request: ChatRequest):
                 # 给前端一点喘息时间，避免背压
                 await asyncio.sleep(0)
         except asyncio.CancelledError:
-            # yield format_sse(SSEEvent(
-            #     event=SSEEventType.done,
-            #     data=None,
-            #     session_id=request.session_id,
-            # ))
+            yield format_sse(SSEEvent(
+                event=SSEEventType.done,
+                data=None,
+                session_id=request.session_id,
+            ))
             # 客户端断开或服务器关闭时收到取消信号
             # 不在此处 yield，直接返回让取消信号正常传播
             logger.debug("chat_stream: client disconnected  session=%s", request.session_id)
-            return
+            # return
         except Exception as e:
             logger.error(
                 "chat_stream: unhandled error  session=%s  error=%s",

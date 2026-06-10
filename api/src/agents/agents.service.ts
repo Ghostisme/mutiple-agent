@@ -15,6 +15,7 @@
 
 import {
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,6 +26,10 @@ import { UpdateAgentDto } from './dto/update-agent.dto';
 
 @Injectable()
 export class AgentsService {
+  // NestJS 内置 Logger，传入类名作为 context，日志里会显示 [AgentsService]
+  // 由于 main.ts 已将全局 Logger 替换为 Winston，这里的日志也会写入文件
+  private readonly logger = new Logger(AgentsService.name);
+
   constructor(
     @InjectRepository(Agent)
     private readonly agentRepo: Repository<Agent>,
@@ -40,7 +45,22 @@ export class AgentsService {
    *   // 用 saved.id 更新 collection_id（如果未指定）
    */
   async create(dto: CreateAgentDto): Promise<Agent> {
-    throw new Error('TODO: 实现 create()');
+    // throw new Error('TODO: 实现 create()');
+    const agent = this.agentRepo.create(dto)
+    const saved = await this.agentRepo.save(agent)
+
+    // 用 logger.debug() 代替 console.log：
+    //   - 控制台会带颜色显示，日志文件里也会记录（debug 级别）
+    //   - 第二个参数是上下文（context），会在日志行前显示 [AgentsService]
+    this.logger.debug(`create() → agent: ${JSON.stringify(agent)}`, AgentsService.name);
+    this.logger.debug(`create() → saved: ${JSON.stringify(saved)}`, AgentsService.name);
+
+    this.logger.log(`create() → agent: ${JSON.stringify(agent)}`, AgentsService.name);
+    this.logger.log(`create() → saved: ${JSON.stringify(saved)}`, AgentsService.name);
+
+    // throw new Error('TODO: 实现 create()');
+    // return saved;
+    return await this.agentRepo.save(agent)
   }
 
   /**
@@ -54,7 +74,8 @@ export class AgentsService {
    *   })
    */
   async findAll(): Promise<Agent[]> {
-    throw new Error('TODO: 实现 findAll()');
+    // throw new Error('TODO: 实现 findAll()');
+    return this.agentRepo.find({where: {is_active: true}, order: {created_at: 'DESC'}})
   }
 
   /**
@@ -66,7 +87,10 @@ export class AgentsService {
    *   if (!agent) throw new NotFoundException(...)
    */
   async findOne(id: string): Promise<Agent> {
-    throw new Error('TODO: 实现 findOne()');
+    // throw new Error('TODO: 实现 findOne()');
+    const agent = await this.agentRepo.findOne({ where: { id } })
+    if (!agent) throw new NotFoundException('Not found this')
+      return agent
   }
 
   /**
@@ -78,7 +102,9 @@ export class AgentsService {
    *   return this.findOne(id)
    */
   async update(id: string, dto: UpdateAgentDto): Promise<Agent> {
-    throw new Error('TODO: 实现 update()');
+    // throw new Error('TODO: 实现 update()');
+    await this.agentRepo.update(id, dto)
+    return this.findOne(id)
   }
 
   /**
@@ -88,6 +114,9 @@ export class AgentsService {
    * 提示：软删除保留历史记录，生产环境推荐使用
    */
   async remove(id: string): Promise<void> {
-    throw new Error('TODO: 实现 remove()');
+    // throw new Error('TODO: 实现 remove()');
+    const currentAgent = await this.agentRepo.findOne({ where: { id } })
+    if (!currentAgent) throw new NotFoundException('Not found this')
+      await this.agentRepo.update(id, {is_active: false})
   }
 }

@@ -4,8 +4,10 @@ import {
   Body,
   Param,
   Sse,
+  Logger,
   MessageEvent,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { Observable, map } from 'rxjs';
 import { ChatService } from './chat.service';
@@ -23,8 +25,9 @@ class HitlResponseDto {
 
 @Controller('chat')
 export class ChatController {
+  private readonly logger = new Logger(ChatController.name);
   constructor(private readonly chatService: ChatService) {}
-
+  
   /**
    * SSE 流式对话端点
    *
@@ -34,10 +37,14 @@ export class ChatController {
   @Sse(':agentId/stream')
   stream(
     @Param('agentId', ParseUUIDPipe) agentId: string,
-    @Body() body: ChatRequestDto,
+    // @Body() body: ChatRequestDto,
+    @Query('session_id') sessionId: string,
+    @Query('message') message: string
   ): Observable<MessageEvent> {
+    this.logger.log('查看当前传递的参数', sessionId, message)
     return this.chatService
-      .streamChat(agentId, body.session_id, body.message)
+      .streamChat(agentId, sessionId, message)
+      // .streamChat(agentId, body.session_id, body.message)
       .pipe(
         map((msg) => ({
           type: msg.event,

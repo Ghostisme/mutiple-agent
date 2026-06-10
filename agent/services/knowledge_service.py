@@ -67,12 +67,12 @@ class KnowledgeService:
         """
         # TODO: 你来实现这里
         logger.info("ingest_document: agent_id=%s  filename=%s", agent_id, filename)
-        # collection = self._get_collection(agent_id)
-        # splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-        # chunks = splitter.split_text(content)
-        # logger.debug("ingest_document: split into %d chunks", len(chunks))
-        # vectors = self.embeddings.embed_documents(chunks)
-        # collection.add(vectors)
+        collection = self._get_collection(agent_id)
+        splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        chunks = splitter.split_text(content)
+        logger.debug("ingest_document: split into %d chunks", len(chunks))
+        vectors = self.embeddings.embed_documents(chunks)
+        collection.add(vectors)
         raise NotImplementedError("请在 knowledge_service.py 中实现 ingest_document()")
 
     async def search(
